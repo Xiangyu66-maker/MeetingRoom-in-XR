@@ -4,7 +4,6 @@ using UnityEngine;
 public class WeaponPickup : MonoBehaviour
 {
     [Header("Interaction")]
-    [SerializeField] private KeyCode interactKey = KeyCode.E;
 
     [Header("World Weapon")]
     [SerializeField] private GameObject worldWeaponObject;
@@ -31,7 +30,7 @@ public class WeaponPickup : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(interactKey))
+        if (QuestControllerInput.PrimaryActionDown)
         {
             PickUpWeapon();
         }
@@ -69,7 +68,7 @@ public class WeaponPickup : MonoBehaviour
         nearbyPlayer = weaponSystem;
         playerInRange = true;
 
-        ShowPrompt("Press E to pick up weapon");
+        ShowPrompt("Press A to pick up weapon");
 
         Debug.Log("Player entered weapon pickup range.");
     }

@@ -13,6 +13,7 @@ public sealed class MainMenuController : MonoBehaviour
     private const string GameSceneName = "ConferenceRoom_before_blockout_sync";
 
     private GameObject menuCanvas;
+    private bool acceptingControllerInput;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void RegisterSceneLoadedHandler()
@@ -69,6 +70,18 @@ public sealed class MainMenuController : MonoBehaviour
         yield return null;
         ResetMenuState();
         EnsureMenuUI();
+        acceptingControllerInput = true;
+    }
+
+    private void Update()
+    {
+        if (acceptingControllerInput &&
+            SceneManager.GetActiveScene().name == MenuSceneName &&
+            QuestControllerInput.PrimaryActionDown)
+        {
+            acceptingControllerInput = false;
+            StartGame();
+        }
     }
 
     public void StartGame()
@@ -133,7 +146,7 @@ public sealed class MainMenuController : MonoBehaviour
         TextMeshProUGUI title = CreateText("Game Title", content, "Meeting Room Escape", 72f, FontStyles.Bold);
         SetRect(title.rectTransform, new Vector2(0f, 126f), new Vector2(720f, 120f));
 
-        Button startButton = CreateButton("Start Game Button", content, "Start Game", new Vector2(0f, 12f));
+        Button startButton = CreateButton("Start Game Button", content, "Start Game (A)", new Vector2(0f, 12f));
         startButton.onClick.AddListener(StartGame);
 
         Button quitButton = CreateButton("Quit Game Button", content, "Quit Game", new Vector2(0f, -76f));

@@ -57599,14 +57599,6 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 11400004, guid: c6453f8e1f814744d8b94e5a6d1f9942, type: 3}
-      propertyPath: cam
-      value:
-      objectReference: {fileID: 0}
-    - target: {fileID: 11400004, guid: c6453f8e1f814744d8b94e5a6d1f9942, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 11400004, guid: c6453f8e1f814744d8b94e5a6d1f9942, type: 3}
       propertyPath: movementSettings.StrafeSpeed
       value: 3.1
       objectReference: {fileID: 0}
@@ -72988,7 +72980,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3923b164e702a724db72e1264c2a7a61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponSystem
-  playerCamera: {fileID: 1994147665}
+  playerCamera: {fileID: 0}
   heldWeaponObject: {fileID: 0}
   crosshairObject: {fileID: 2140094801}
   firePoint: {fileID: 0}

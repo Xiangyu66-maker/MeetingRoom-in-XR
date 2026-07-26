@@ -8,7 +8,6 @@ public sealed class OpenableCabinet : MonoBehaviour
     [SerializeField] private Vector3 openOffset = new Vector3(0f, 0f, -0.72f);
     [SerializeField] private float interactionDistance = 2.4f;
     [SerializeField] private float openSpeed = 6f;
-    [SerializeField] private KeyCode interactKey = KeyCode.E;
     [SerializeField] private bool startOpen;
 
     private Transform door;
@@ -46,7 +45,7 @@ public sealed class OpenableCabinet : MonoBehaviour
         bool backpackOpen = IsBackpackOpen();
         canInteract = !backpackOpen && IsPlayerAimingAtCabinet();
 
-        if (!backpackOpen && canInteract && Input.GetKeyDown(interactKey))
+        if (!backpackOpen && canInteract && QuestControllerInput.PrimaryActionDown)
         {
             Toggle();
         }
@@ -174,7 +173,7 @@ public sealed class OpenableCabinet : MonoBehaviour
             return;
         }
 
-        string label = targetOpen ? "Press E to close cabinet" : "Press E to pull cabinet open";
+        string label = targetOpen ? "Press A to close cabinet" : "Press A to pull cabinet open";
         GUI.Label(new Rect((Screen.width - 260f) * 0.5f, Screen.height - 86f, 260f, 32f), label);
     }
 }
