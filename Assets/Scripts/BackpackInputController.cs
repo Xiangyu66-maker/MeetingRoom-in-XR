@@ -5,6 +5,9 @@ using UnityEngine;
 public sealed class BackpackInputController : MonoBehaviour
 {
     [SerializeField] private BackpackUI backpackUI;
+    [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
+    [SerializeField] private KeyCode nextItemKey = KeyCode.E;
+
     private void Awake()
     {
         ResolveUI();
@@ -12,8 +15,8 @@ public sealed class BackpackInputController : MonoBehaviour
 
     private void Update()
     {
-        bool togglePressed = QuestControllerInput.BackpackDown;
-        bool nextItemPressed = QuestControllerInput.PrimaryActionDown;
+        bool togglePressed = Input.GetKeyDown(toggleKey);
+        bool nextItemPressed = Input.GetKeyDown(nextItemKey);
 
         if (!togglePressed && !nextItemPressed)
         {
@@ -28,7 +31,7 @@ public sealed class BackpackInputController : MonoBehaviour
         ResolveUI();
         if (backpackUI == null)
         {
-            Debug.LogWarning("Backpack input pressed, but no BackpackUI is available.", this);
+            Debug.LogWarning("Tab pressed, but no BackpackUI is available.", this);
             return;
         }
 

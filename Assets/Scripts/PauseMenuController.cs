@@ -62,7 +62,7 @@ public sealed class PauseMenuController : MonoBehaviour
 
     private void Update()
     {
-        if (!QuestControllerInput.MenuDown)
+        if (!Input.GetKeyDown(KeyCode.Escape))
         {
             return;
         }

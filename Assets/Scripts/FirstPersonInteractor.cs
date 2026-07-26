@@ -6,6 +6,8 @@ public sealed class FirstPersonInteractor : MonoBehaviour
 {
     [SerializeField] private Camera interactionCamera;
     [SerializeField] private float interactionRange = 2f;
+    [SerializeField] private KeyCode interactKey = KeyCode.E;
+    [SerializeField] private KeyCode vlmKey = KeyCode.Q;
     [SerializeField] private KeyCode grabKey = KeyCode.F;
     [SerializeField] private bool showDebugPrompt = true;
 
@@ -29,13 +31,6 @@ public sealed class FirstPersonInteractor : MonoBehaviour
             return;
         }
 
-        if (BackpackUI.Instance != null && BackpackUI.Instance.IsOpen)
-        {
-            currentTarget = null;
-            currentGrabbableTarget = null;
-            return;
-        }
-
         ResolveCamera();
 
         currentTarget = FindLookTarget();
@@ -49,12 +44,12 @@ public sealed class FirstPersonInteractor : MonoBehaviour
             }
         }
 
-        if (currentTarget != null && QuestControllerInput.PrimaryActionDown)
+        if (currentTarget != null && Input.GetKeyDown(interactKey))
         {
             currentTarget.Interact();
         }
 
-        if (currentTarget != null && QuestControllerInput.SecondaryActionDown)
+        if (currentTarget != null && Input.GetKeyDown(vlmKey))
         {
             GptVisionInteractionManager manager = GptVisionInteractionManager.Instance;
             if (manager != null)
@@ -134,7 +129,7 @@ public sealed class FirstPersonInteractor : MonoBehaviour
 
         if (currentTarget != null)
         {
-            GUI.Label(new Rect((Screen.width - 300f) * 0.5f, Screen.height - 72f, 300f, 28f), "A: interact | B: VLM (E/Q on keyboard)");
+            GUI.Label(new Rect((Screen.width - 260f) * 0.5f, Screen.height - 72f, 260f, 28f), "Press E to interact | Q for VLM");
         }
 
         if (heldObject != null)

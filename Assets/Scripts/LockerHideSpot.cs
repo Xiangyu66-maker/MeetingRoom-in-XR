@@ -5,6 +5,7 @@ public class LockerHideSpot : MonoBehaviour
 {
     [Header("Interaction")]
     [SerializeField] private string playerTag = "Player";
+    [SerializeField] private KeyCode interactKey = KeyCode.E;
 
     [Header("Locker Positions")]
     [Tooltip("Place this at the desired camera position inside the locker.")]
@@ -58,7 +59,7 @@ public class LockerHideSpot : MonoBehaviour
             // 躲藏时由这个脚本控制视角
             UpdateLockerView();
 
-            if (QuestControllerInput.PrimaryActionDown)
+            if (Input.GetKeyDown(interactKey))
             {
                 ExitLocker();
             }
@@ -71,7 +72,7 @@ public class LockerHideSpot : MonoBehaviour
             return;
         }
 
-        if (QuestControllerInput.PrimaryActionDown)
+        if (Input.GetKeyDown(interactKey))
         {
             EnterLocker();
         }
@@ -164,7 +165,7 @@ public class LockerHideSpot : MonoBehaviour
 
         PlayerHideState.SetHidden(true);
 
-        ShowPrompt("Press A to exit");
+        ShowPrompt("Press E to exit");
 
         Debug.Log("Player entered locker and is facing the slit.");
     }
@@ -239,7 +240,7 @@ public class LockerHideSpot : MonoBehaviour
 
         RestorePlayerController();
 
-        ShowPrompt("Press A to hide");
+        ShowPrompt("Press E to hide");
 
         Debug.Log("Player exited locker.");
     }
@@ -300,7 +301,7 @@ public class LockerHideSpot : MonoBehaviour
 
         if (!playerInsideLocker)
         {
-            ShowPrompt("Press A to hide");
+            ShowPrompt("Press E to hide");
         }
 
         Debug.Log("Player entered locker range.");

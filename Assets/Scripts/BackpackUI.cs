@@ -365,7 +365,7 @@ public sealed class BackpackUI : MonoBehaviour
         emptyRect.anchoredPosition = new Vector2(0f, 0f);
         emptyRect.sizeDelta = new Vector2(-36f, 38f);
 
-        TextMeshProUGUI closeText = CreateText("A: switch clue | X: close (E/Tab on keyboard)", panelRect, "Backpack Close Text", 13f, Color.white, TextAlignmentOptions.Center);
+        TextMeshProUGUI closeText = CreateText("Press E to switch clue | Tab to close", panelRect, "Backpack Close Text", 13f, Color.white, TextAlignmentOptions.Center);
         RectTransform closeRect = closeText.rectTransform;
         closeRect.anchorMin = new Vector2(0f, 0f);
         closeRect.anchorMax = new Vector2(1f, 0f);
@@ -704,7 +704,7 @@ public sealed class BackpackUI : MonoBehaviour
         };
         closeStyle.normal.textColor = Color.white;
         GUI.color = Color.white;
-        GUI.Label(new Rect(panelRect.x + 12f, panelRect.yMax - 34f, panelRect.width - 24f, 22f), "A: switch clue | X: close (E/Tab on keyboard)", closeStyle);
+        GUI.Label(new Rect(panelRect.x + 12f, panelRect.yMax - 34f, panelRect.width - 24f, 22f), "Press E to switch clue | Tab to close", closeStyle);
     }
 
     private InventoryItem FindInventoryItem(string itemId)
