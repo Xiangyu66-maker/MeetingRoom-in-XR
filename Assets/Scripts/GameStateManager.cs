@@ -5,6 +5,8 @@ using UnityEngine;
 public sealed class GameStateManager : MonoBehaviour
 {
     private const float DefaultTimeLimitSeconds = 600f;
+    private const string EscapeObjectiveScenePath =
+        "Assets/Scenes/ConferenceRoom_before_blockout_sync.unity";
 
     public enum GameState
     {
@@ -56,6 +58,24 @@ public sealed class GameStateManager : MonoBehaviour
         if (frozenElapsedTime >= timeLimitSeconds)
         {
             FailGame();
+        }
+    }
+
+    private void Start()
+    {
+        string normalizedPath = gameObject.scene.path.Replace('\\', '/');
+        if (!string.Equals(
+                normalizedPath,
+                EscapeObjectiveScenePath,
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        EnsureResultUI();
+        if (resultUI != null)
+        {
+            resultUI.ShowEscapeObjective();
         }
     }
 

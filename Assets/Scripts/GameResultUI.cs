@@ -9,6 +9,7 @@ public sealed class GameResultUI : MonoBehaviour
     private const string SuccessMessage = "Game Success! You escaped the meeting room.";
     private const string FailureMessage = "Game Failed! Time limit exceeded.";
     private const string ClueFoundMessage = "Clue Found! Note added to backpack.";
+    private const string EscapeObjectiveMessage = "you need escape the room";
 
     [SerializeField] private bool useTextMeshProWhenAvailable = true;
     [SerializeField] private float holdSeconds = 2f;
@@ -103,6 +104,11 @@ public sealed class GameResultUI : MonoBehaviour
     public void ShowClueFound()
     {
         ShowMessage(ClueFoundMessage);
+    }
+
+    public void ShowEscapeObjective()
+    {
+        ShowMessage(EscapeObjectiveMessage);
     }
 
     public void ShowMessage(string message)
