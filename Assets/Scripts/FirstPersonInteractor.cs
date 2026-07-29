@@ -72,7 +72,7 @@ public sealed class FirstPersonInteractor : MonoBehaviour
             currentGrabbableTarget = null;
         }
 
-        if (Input.GetKeyDown(grabKey))
+        if (QuestControllerInput.GrabDown || Input.GetKeyDown(grabKey))
         {
             if (heldObject != null)
             {
@@ -127,8 +127,45 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         }
     }
 
+    private void LateUpdate()
+    {
+        if (!showDebugPrompt
+            || KeypadController.HasActiveInput
+            || (BackpackUI.Instance != null && BackpackUI.Instance.IsOpen))
+        {
+            QuestXRUIRuntime.HideMessage(QuestXRUIRuntime.Channel.Interaction);
+            return;
+        }
+
+        string prompt = currentTarget != null ? "A: Interact    B: Vision" : string.Empty;
+        if (heldObject != null)
+        {
+            prompt = AppendPrompt(prompt, "Right grip: Drop object");
+        }
+        else if (currentGrabbableTarget != null)
+        {
+            prompt = AppendPrompt(prompt, "Right grip: Pick up object");
+        }
+
+        QuestXRUIRuntime.SetMessage(
+            QuestXRUIRuntime.Channel.Interaction,
+            prompt,
+            !string.IsNullOrWhiteSpace(prompt));
+    }
+
+    private static string AppendPrompt(string current, string addition)
+    {
+        return string.IsNullOrWhiteSpace(current) ? addition : current + "\n" + addition;
+    }
+
+    private void OnDisable()
+    {
+        QuestXRUIRuntime.HideMessage(QuestXRUIRuntime.Channel.Interaction);
+    }
+
     private void OnGUI()
     {
+        if (QuestXRUIRuntime.IsXRPresentationActive) return;
         if (!showDebugPrompt) return;
         if (KeypadController.HasActiveInput) return;
 

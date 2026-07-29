@@ -21,4 +21,10 @@ public static class QuestControllerInput
     public static bool MenuDown =>
         Input.GetKeyDown(KeyCode.Escape) ||
         OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.LTouch); // Y
+
+    public static bool GrabDown =>
+        Input.GetKeyDown(KeyCode.F) ||
+        OVRInput.GetDown(
+            OVRInput.Button.PrimaryHandTrigger,
+            OVRInput.Controller.RTouch); // Right grip
 }

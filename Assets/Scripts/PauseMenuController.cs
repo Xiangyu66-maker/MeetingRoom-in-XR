@@ -120,6 +120,15 @@ public sealed class PauseMenuController : MonoBehaviour
 
     public void BackToMenu()
     {
+        if (!Application.CanStreamedLevelBeLoaded(MenuSceneName))
+        {
+            Debug.LogWarning(
+                "Back to Menu is unavailable because no Menu scene is included in the build.",
+                this);
+            ResumeGame();
+            return;
+        }
+
         isPaused = false;
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
@@ -201,6 +210,15 @@ public sealed class PauseMenuController : MonoBehaviour
 
         Button menuButton = CreateButton("Back to Menu Button", content, "Back to Menu", new Vector2(0f, -30f));
         menuButton.onClick.AddListener(BackToMenu);
+        if (!Application.CanStreamedLevelBeLoaded(MenuSceneName))
+        {
+            menuButton.interactable = false;
+            TextMeshProUGUI menuLabel = menuButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (menuLabel != null)
+            {
+                menuLabel.text = "Back to Menu (Unavailable)";
+            }
+        }
 
         Button quitButton = CreateButton("Quit Game Button", content, "Quit Game", new Vector2(0f, -118f));
         quitButton.onClick.AddListener(QuitGame);

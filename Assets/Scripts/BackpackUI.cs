@@ -159,6 +159,11 @@ public sealed class BackpackUI : MonoBehaviour
         UpdateNotificationDot();
     }
 
+    private void LateUpdate()
+    {
+        ApplyCanvasVisibility();
+    }
+
     private void ResolveInventory()
     {
         if (inventoryManager != null)
@@ -543,6 +548,11 @@ public sealed class BackpackUI : MonoBehaviour
 
     private void OnGUI()
     {
+        if (QuestXRUIRuntime.IsXRPresentationActive)
+        {
+            return;
+        }
+
         if (!showImmediateModeFallback)
         {
             return;
@@ -572,12 +582,14 @@ public sealed class BackpackUI : MonoBehaviour
             return;
         }
 
+        bool useCanvasUI =
+            QuestXRUIRuntime.IsXRPresentationActive || !showImmediateModeFallback;
         canvas.gameObject.SetActive(true);
-        canvas.enabled = !showImmediateModeFallback;
+        canvas.enabled = useCanvasUI;
 
         if (iconRoot != null)
         {
-            iconRoot.gameObject.SetActive(!showImmediateModeFallback);
+            iconRoot.gameObject.SetActive(useCanvasUI);
         }
     }
 

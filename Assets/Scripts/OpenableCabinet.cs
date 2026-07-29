@@ -58,6 +58,12 @@ public sealed class OpenableCabinet : MonoBehaviour
         {
             door.localPosition = targetPosition;
         }
+
+        string prompt = targetOpen ? "A: Close cabinet" : "A: Open cabinet";
+        QuestXRUIRuntime.SetMessage(
+            QuestXRUIRuntime.Channel.Context,
+            prompt,
+            canInteract);
     }
 
     public void Toggle()
@@ -168,6 +174,11 @@ public sealed class OpenableCabinet : MonoBehaviour
 
     private void OnGUI()
     {
+        if (QuestXRUIRuntime.IsXRPresentationActive)
+        {
+            return;
+        }
+
         if (!canInteract)
         {
             return;
@@ -175,5 +186,10 @@ public sealed class OpenableCabinet : MonoBehaviour
 
         string label = targetOpen ? "Press A to close cabinet" : "Press A to pull cabinet open";
         GUI.Label(new Rect((Screen.width - 260f) * 0.5f, Screen.height - 86f, 260f, 32f), label);
+    }
+
+    private void OnDisable()
+    {
+        QuestXRUIRuntime.HideMessage(QuestXRUIRuntime.Channel.Context);
     }
 }

@@ -359,6 +359,11 @@ public sealed class GptVisionInteractionManager : MonoBehaviour
 
     private void OnGUI()
     {
+        if (QuestXRUIRuntime.IsXRPresentationActive)
+        {
+            return;
+        }
+
         if (!showDebugOverlay || string.IsNullOrWhiteSpace(lastText))
         {
             return;
@@ -366,6 +371,19 @@ public sealed class GptVisionInteractionManager : MonoBehaviour
 
         GUI.Box(new Rect(24, Screen.height - 140, Screen.width - 48, 112), $"{ActiveProviderName} Vision");
         GUI.Label(new Rect(40, Screen.height - 108, Screen.width - 80, 80), lastText);
+    }
+
+    private void LateUpdate()
+    {
+        QuestXRUIRuntime.SetMessage(
+            QuestXRUIRuntime.Channel.Vision,
+            $"{ActiveProviderName} Vision\n{lastText}",
+            showDebugOverlay && !string.IsNullOrWhiteSpace(lastText));
+    }
+
+    private void OnDisable()
+    {
+        QuestXRUIRuntime.HideMessage(QuestXRUIRuntime.Channel.Vision);
     }
 
     [Serializable]
