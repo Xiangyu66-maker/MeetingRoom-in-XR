@@ -147,6 +147,7 @@ public sealed class MeetingRoomAdaptiveGuide : MonoBehaviour
         }
 
         ClearHighlight();
+        QuestXRUIRuntime.HideMessage(QuestXRUIRuntime.Channel.AdaptiveGuide);
     }
 
     private void Update()
@@ -841,6 +842,11 @@ public sealed class MeetingRoomAdaptiveGuide : MonoBehaviour
 
     private void OnGUI()
     {
+        if (QuestXRUIRuntime.IsXRPresentationActive)
+        {
+            return;
+        }
+
         if (!showDebugOverlay || !Application.isPlaying)
         {
             return;
@@ -862,5 +868,28 @@ public sealed class MeetingRoomAdaptiveGuide : MonoBehaviour
         {
             GUI.Label(new Rect(panel.x + 16f, panel.y + 112f, width - 32f, 38f), $"AI: {latestAiInstruction}");
         }
+    }
+
+    private void LateUpdate()
+    {
+        if (!showDebugOverlay || !Application.isPlaying)
+        {
+            QuestXRUIRuntime.HideMessage(QuestXRUIRuntime.Channel.AdaptiveGuide);
+            return;
+        }
+
+        StringBuilder text = new StringBuilder();
+        text.Append("Stage: ").Append(currentStage)
+            .Append("    Target: ").Append(currentTargetId)
+            .Append("\n").Append(BuildLocalHint());
+
+        if (!string.IsNullOrWhiteSpace(latestAiInstruction))
+        {
+            text.Append("\nAI: ").Append(latestAiInstruction);
+        }
+
+        QuestXRUIRuntime.SetMessage(
+            QuestXRUIRuntime.Channel.AdaptiveGuide,
+            text.ToString());
     }
 }

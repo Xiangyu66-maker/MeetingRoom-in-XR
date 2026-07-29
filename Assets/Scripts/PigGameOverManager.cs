@@ -47,6 +47,14 @@ public class PigGameOverManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (isGameOver && QuestControllerInput.PrimaryActionDown)
+        {
+            RestartGame();
+        }
+    }
+
     public void ShowGameOver()
     {
         if (isGameOver)

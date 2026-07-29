@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/ConferenceRoom_before_blockout_sync.unity
+    guid: 6d5f0b4d5b1349a48bcf663728ad9f5a
+  - enabled: 1
     path: Assets/MetaSplashScreen/Scenes/SplashScreenISDK.unity
     guid: 28357e73bd1173740a63e1b7ece9eb1b
   - enabled: 1
