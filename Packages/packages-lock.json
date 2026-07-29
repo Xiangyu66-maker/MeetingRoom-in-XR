@@ -1,39 +1,36 @@
 {
   "dependencies": {
     "com.meta.xr.sdk.core": {
-      "version": "203.0.0",
-      "depth": 1,
-      "source": "registry",
+      "version": "file:C:/GJ/com.meta.xr.sdk.core-205.0.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
       "dependencies": {
-        "com.unity.xr.hands": "1.7.2",
-        "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.audio": "1.0.0",
-        "com.unity.modules.imgui": "1.0.0",
         "com.unity.modules.imageconversion": "1.0.0",
+        "com.unity.modules.imgui": "1.0.0",
+        "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.unitywebrequest": "1.0.0",
-        "com.unity.modules.unitywebrequestaudio": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
+        "com.unity.modules.unitywebrequestaudio": "1.0.0",
+        "com.unity.xr.hands": "1.7.2"
+      }
     },
     "com.meta.xr.sdk.interaction": {
-      "version": "203.0.0",
-      "depth": 1,
-      "source": "registry",
+      "version": "file:C:/GJ/com.meta.xr.sdk.interaction-205.0.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
       "dependencies": {
-        "com.unity.ugui": "1.0.0",
-        "com.unity.textmeshpro": "3.0.6"
-      },
-      "url": "https://packages.unity.com"
+        "com.unity.textmeshpro": "3.0.6",
+        "com.unity.ugui": "1.0.0"
+      }
     },
     "com.meta.xr.sdk.interaction.ovr": {
-      "version": "203.0.0",
+      "version": "file:C:/GJ/com.meta.xr.sdk.interaction.ovr-205.0.0.tgz",
       "depth": 0,
-      "source": "registry",
+      "source": "local-tarball",
       "dependencies": {
-        "com.meta.xr.sdk.core": "203.0.0",
-        "com.meta.xr.sdk.interaction": "203.0.0"
-      },
-      "url": "https://packages.unity.com"
+        "com.meta.xr.sdk.interaction": "205.0.0",
+        "com.meta.xr.sdk.core": "205.0.0"
+      }
     },
     "com.unity.ai.navigation": {
       "version": "2.0.12",
@@ -236,7 +233,7 @@
     },
     "com.unity.textmeshpro": {
       "version": "5.0.0",
-      "depth": 2,
+      "depth": 1,
       "source": "builtin",
       "dependencies": {
         "com.unity.ugui": "2.0.0"
@@ -284,7 +281,7 @@
     },
     "com.unity.xr.hands": {
       "version": "1.7.3",
-      "depth": 2,
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.modules.xr": "1.0.0",
