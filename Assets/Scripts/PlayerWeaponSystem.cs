@@ -4,37 +4,46 @@ using UnityEngine;
 public class PlayerWeaponSystem : MonoBehaviour
 {
     [Header("Weapon References")]
+    [Tooltip("Quest头显摄像机，一般绑定CenterEyeAnchor。")]
     [SerializeField] private Camera playerCamera;
 
-    [Tooltip("The held weapon or WeaponHolder object.")]
+    [Tooltip("右手下的WeaponHolder，拾取前隐藏，拾取后显示。")]
     [SerializeField] private GameObject heldWeaponObject;
 
+    [Tooltip("VR HUD中的准星对象。")]
     [SerializeField] private GameObject crosshairObject;
 
-    [Tooltip("Position at the end of the gun barrel.")]
+    [Tooltip("枪口位置，必须放在枪管出口。")]
     [SerializeField] private Transform firePoint;
 
-    [Tooltip("Prefab containing BulletTracer and LineRenderer.")]
+    [Tooltip("带有BulletTracer和LineRenderer的弹道Prefab。")]
     [SerializeField] private BulletTracer bulletTracerPrefab;
 
     [Header("Cooldown UI")]
-    [Tooltip("Text that displays time until the next shot.")]
+    [Tooltip("显示READY或下一次射击时间的TMP文字。")]
     [SerializeField] private TMP_Text shootingCooldownText;
 
     [SerializeField] private string readyText = "READY";
-
     [SerializeField] private string cooldownPrefix = "NEXT SHOT: ";
 
     [Header("Shooting Settings")]
     [SerializeField] private float shootingRange = 20f;
 
-    [Tooltip("Time between two shots.")]
-    [SerializeField] private float shootingCooldown = 3f;
+    [Tooltip("两次射击之间的等待时间。")]
+    [SerializeField] private float shootingCooldown = 8f;
 
-    [Tooltip("How long the pig remains stunned.")]
-    [SerializeField] private float pigStunDuration = 3f;
+    [Tooltip("猪被击中后的眩晕时间。")]
+    [SerializeField] private float pigStunDuration = 5f;
 
+    [Tooltip("射线能够击中的Layer。")]
     [SerializeField] private LayerMask hitMask = ~0;
+
+    [Header("Quest Input")]
+    [Tooltip("使用Quest右手食指扳机开枪。")]
+    [SerializeField] private bool useQuestTrigger = true;
+
+    [Tooltip("在Unity编辑器中允许鼠标左键测试。")]
+    [SerializeField] private bool allowMouseFallback = true;
 
     public bool HasWeapon { get; private set; }
 
@@ -42,6 +51,10 @@ public class PlayerWeaponSystem : MonoBehaviour
 
     private void Awake()
     {
+        /*
+         * 如果没有手动绑定摄像机，
+         * 自动寻找Camera Rig下面的Camera。
+         */
         if (playerCamera == null)
         {
             playerCamera = GetComponentInChildren<Camera>(true);
@@ -74,12 +87,44 @@ public class PlayerWeaponSystem : MonoBehaviour
             return;
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (WasShootPressed())
         {
             TryShoot();
         }
     }
 
+    private bool WasShootPressed()
+    {
+        bool pressed = false;
+
+        /*
+         * Quest右手食指扳机。
+         */
+        if (useQuestTrigger)
+        {
+            pressed = OVRInput.GetDown(
+                OVRInput.Button.PrimaryIndexTrigger,
+                OVRInput.Controller.RTouch
+            );
+        }
+
+        /*
+         * Unity编辑器中的鼠标备用测试。
+         */
+#if UNITY_EDITOR || UNITY_STANDALONE
+        if (allowMouseFallback &&
+            Input.GetMouseButtonDown(0))
+        {
+            pressed = true;
+        }
+#endif
+
+        return pressed;
+    }
+
+    /// <summary>
+    /// 由WeaponPickup在玩家拾取武器时调用。
+    /// </summary>
     public void EquipWeapon()
     {
         if (HasWeapon)
@@ -93,19 +138,19 @@ public class PlayerWeaponSystem : MonoBehaviour
         UpdateWeaponVisuals(true);
         UpdateCooldownUI(true);
 
-        Debug.Log("Player picked up the weapon.");
+        Debug.Log("Quest player picked up the weapon.");
     }
 
     private void TryShoot()
     {
         if (Time.time < nextShootingTime)
         {
-            float remainingTime =
+            float remaining =
                 nextShootingTime - Time.time;
 
             Debug.Log(
                 "Weapon cooling down: " +
-                remainingTime.ToString("F1") +
+                remaining.ToString("F1") +
                 " seconds."
             );
 
@@ -121,31 +166,53 @@ public class PlayerWeaponSystem : MonoBehaviour
 
     private void Shoot()
     {
-        if (playerCamera == null)
+        Transform shootingOrigin = null;
+
+        /*
+         * 正常情况下必须使用FirePoint。
+         * 没绑定时才临时使用头显摄像机。
+         */
+        if (firePoint != null)
+        {
+            shootingOrigin = firePoint;
+        }
+        else if (playerCamera != null)
+        {
+            shootingOrigin = playerCamera.transform;
+
+            Debug.LogWarning(
+                "PlayerWeaponSystem: FirePoint is missing. " +
+                "Using the player camera as a fallback."
+            );
+        }
+
+        if (shootingOrigin == null)
         {
             Debug.LogWarning(
-                "PlayerWeaponSystem: Player Camera is not assigned."
+                "PlayerWeaponSystem: Neither FirePoint nor PlayerCamera is assigned."
             );
 
             return;
         }
 
-        Ray aimingRay =
-            playerCamera.ViewportPointToRay(
-                new Vector3(0.5f, 0.5f, 0f)
-            );
+        /*
+         * Quest模式中：
+         * 枪口指向哪里，射线就飞向哪里。
+         */
+        Ray shootingRay = new Ray(
+            shootingOrigin.position,
+            shootingOrigin.forward
+        );
 
         Vector3 tracerStartPosition =
-            firePoint != null
-                ? firePoint.position
-                : aimingRay.origin;
+            shootingOrigin.position;
 
         Vector3 tracerEndPosition =
-            aimingRay.origin +
-            aimingRay.direction * shootingRange;
+            shootingRay.origin +
+            shootingRay.direction * shootingRange;
 
         bool hitSomething = Physics.Raycast(
-            aimingRay,
+            shootingRay,
             out RaycastHit hit,
             shootingRange,
             hitMask,
@@ -156,8 +223,15 @@ public class PlayerWeaponSystem : MonoBehaviour
         {
             tracerEndPosition = hit.point;
 
-            Debug.Log("Shot hit: " + hit.collider.name);
+            Debug.Log(
+                "Shot hit: " +
+                hit.collider.name
+            );
 
+            /*
+             * 猪的碰撞体可能在子物体上，
+             * 所以向父物体寻找EnemyPigStun。
+             */
             EnemyPigStun pigStun =
                 hit.collider.GetComponentInParent<EnemyPigStun>();
 
@@ -165,13 +239,12 @@ public class PlayerWeaponSystem : MonoBehaviour
             {
                 pigStun.Stun(
                     pigStunDuration,
-                    aimingRay.direction
+                    shootingRay.direction
                 );
 
                 Debug.Log(
-                    "Pig was hit and stunned for " +
-                    pigStunDuration +
-                    " seconds."
+                    "Pig hit. Stun duration: " +
+                    pigStunDuration.ToString("F1")
                 );
             }
         }
@@ -186,9 +259,9 @@ public class PlayerWeaponSystem : MonoBehaviour
         );
 
         Debug.DrawRay(
-            aimingRay.origin,
-            aimingRay.direction * shootingRange,
-            Color.red,
+            shootingRay.origin,
+            shootingRay.direction * shootingRange,
+            Color.green,
             1f
         );
     }
@@ -200,7 +273,7 @@ public class PlayerWeaponSystem : MonoBehaviour
         if (bulletTracerPrefab == null)
         {
             Debug.LogWarning(
-                "PlayerWeaponSystem: Bullet Tracer Prefab is not assigned."
+                "PlayerWeaponSystem: BulletTracer prefab is not assigned."
             );
 
             return;
@@ -244,7 +317,8 @@ public class PlayerWeaponSystem : MonoBehaviour
         }
         else
         {
-            shootingCooldownText.text = readyText;
+            shootingCooldownText.text =
+                readyText;
         }
     }
 
