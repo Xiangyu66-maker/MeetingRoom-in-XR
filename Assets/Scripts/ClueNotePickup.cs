@@ -1,9 +1,12 @@
+using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 [AddComponentMenu("Conference Room/Clue Note Pickup")]
 public sealed class ClueNotePickup : MonoBehaviour
 {
+    public static event Action<string, ClueNotePickup> Collected;
+
     [SerializeField] private string itemId = "note_first_digit";
     [SerializeField] private string itemName = "Cabinet Note";
     [SerializeField] private string itemType = "note";
@@ -36,6 +39,8 @@ public sealed class ClueNotePickup : MonoBehaviour
             {
                 notificationUI.ShowClueFound();
             }
+
+            Collected?.Invoke(itemId, this);
         }
 
         return added;

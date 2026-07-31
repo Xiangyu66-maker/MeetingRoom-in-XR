@@ -15,6 +15,8 @@ public sealed class DoorController : MonoBehaviour
     private bool loggedVictory;
     private bool notifiedGameState;
 
+    public bool IsLocked => !isUnlocked;
+
     private void Awake()
     {
         closedLocalPosition = transform.localPosition;
@@ -62,5 +64,12 @@ public sealed class DoorController : MonoBehaviour
 
         MeetingRoomAdaptiveGuide.NotifyDoorUnlocked();
     }
-}
 
+    public void Inspect()
+    {
+        if (IsLocked)
+        {
+            GameResultUI.GetOrCreate()?.ShowDoorLocked();
+        }
+    }
+}
