@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using TMPro;
 using UnityEngine;
 
@@ -7,20 +9,19 @@ public class PlayerWeaponSystem : MonoBehaviour
     [Tooltip("Quest头显摄像机，一般绑定CenterEyeAnchor。")]
     [SerializeField] private Camera playerCamera;
 
-    [Tooltip("右手下的WeaponHolder，拾取前隐藏，拾取后显示。")]
+    [Tooltip("右手下面的WeaponHolder。")]
     [SerializeField] private GameObject heldWeaponObject;
 
-    [Tooltip("VR HUD中的准星对象。")]
+    [Tooltip("VR HUD中的准星。")]
     [SerializeField] private GameObject crosshairObject;
 
     [Tooltip("枪口位置，必须放在枪管出口。")]
     [SerializeField] private Transform firePoint;
 
-    [Tooltip("带有BulletTracer和LineRenderer的弹道Prefab。")]
+    [Tooltip("弹道Prefab。")]
     [SerializeField] private BulletTracer bulletTracerPrefab;
 
     [Header("Cooldown UI")]
-    [Tooltip("显示READY或下一次射击时间的TMP文字。")]
     [SerializeField] private TMP_Text shootingCooldownText;
 
     [SerializeField] private string readyText = "READY";
@@ -29,20 +30,19 @@ public class PlayerWeaponSystem : MonoBehaviour
     [Header("Shooting Settings")]
     [SerializeField] private float shootingRange = 20f;
 
-    [Tooltip("两次射击之间的等待时间。")]
+    [Tooltip("两次射击之间的冷却时间。")]
     [SerializeField] private float shootingCooldown = 8f;
 
     [Tooltip("猪被击中后的眩晕时间。")]
     [SerializeField] private float pigStunDuration = 5f;
 
-    [Tooltip("射线能够击中的Layer。")]
     [SerializeField] private LayerMask hitMask = ~0;
 
     [Header("Quest Input")]
-    [Tooltip("使用Quest右手食指扳机开枪。")]
+    [Tooltip("Quest右手食指扳机开枪。")]
     [SerializeField] private bool useQuestTrigger = true;
 
-    [Tooltip("在Unity编辑器中允许鼠标左键测试。")]
+    [Tooltip("Unity编辑器中允许鼠标左键测试。")]
     [SerializeField] private bool allowMouseFallback = true;
 
     public bool HasWeapon { get; private set; }
@@ -51,13 +51,10 @@ public class PlayerWeaponSystem : MonoBehaviour
 
     private void Awake()
     {
-        /*
-         * 如果没有手动绑定摄像机，
-         * 自动寻找Camera Rig下面的Camera。
-         */
         if (playerCamera == null)
         {
-            playerCamera = GetComponentInChildren<Camera>(true);
+            playerCamera =
+                GetComponentInChildren<Camera>(true);
         }
 
         HasWeapon = false;
@@ -97,9 +94,6 @@ public class PlayerWeaponSystem : MonoBehaviour
     {
         bool pressed = false;
 
-        /*
-         * Quest右手食指扳机。
-         */
         if (useQuestTrigger)
         {
             pressed = OVRInput.GetDown(
@@ -108,9 +102,6 @@ public class PlayerWeaponSystem : MonoBehaviour
             );
         }
 
-        /*
-         * Unity编辑器中的鼠标备用测试。
-         */
 #if UNITY_EDITOR || UNITY_STANDALONE
         if (allowMouseFallback &&
             Input.GetMouseButtonDown(0))
@@ -123,7 +114,50 @@ public class PlayerWeaponSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 由WeaponPickup在玩家拾取武器时调用。
+    /// QuestWeaponAttacher会调用此方法，
+    /// 自动设置手持武器与FirePoint。
+    /// </summary>
+    public void ConfigureHeldWeapon(
+        GameObject newHeldWeaponObject,
+        Transform newFirePoint)
+    {
+        heldWeaponObject = newHeldWeaponObject;
+
+        if (newFirePoint != null)
+        {
+            firePoint = newFirePoint;
+        }
+
+        if (heldWeaponObject != null)
+        {
+            bool shouldShow =
+                HasWeapon &&
+                !PlayerHideState.IsHidden;
+
+            heldWeaponObject.SetActive(shouldShow);
+        }
+
+        Debug.Log(
+            "Held weapon configured: " +
+            (
+                heldWeaponObject != null
+                    ? heldWeaponObject.name
+                    : "None"
+            )
+        );
+
+        Debug.Log(
+            "FirePoint configured: " +
+            (
+                firePoint != null
+                    ? firePoint.name
+                    : "None"
+            )
+        );
+    }
+
+    /// <summary>
+    /// WeaponPickup拾取武器时调用。
     /// </summary>
     public void EquipWeapon()
     {
@@ -138,19 +172,21 @@ public class PlayerWeaponSystem : MonoBehaviour
         UpdateWeaponVisuals(true);
         UpdateCooldownUI(true);
 
-        Debug.Log("Quest player picked up the weapon.");
+        Debug.Log(
+            "Quest player picked up the weapon."
+        );
     }
 
     private void TryShoot()
     {
         if (Time.time < nextShootingTime)
         {
-            float remaining =
+            float remainingTime =
                 nextShootingTime - Time.time;
 
             Debug.Log(
                 "Weapon cooling down: " +
-                remaining.ToString("F1") +
+                remainingTime.ToString("F1") +
                 " seconds."
             );
 
@@ -166,39 +202,30 @@ public class PlayerWeaponSystem : MonoBehaviour
 
     private void Shoot()
     {
-        Transform shootingOrigin = null;
+        Transform shootingOrigin = firePoint;
 
-        /*
-         * 正常情况下必须使用FirePoint。
-         * 没绑定时才临时使用头显摄像机。
-         */
-        if (firePoint != null)
+        if (shootingOrigin == null &&
+            playerCamera != null)
         {
-            shootingOrigin = firePoint;
-        }
-        else if (playerCamera != null)
-        {
-            shootingOrigin = playerCamera.transform;
+            shootingOrigin =
+                playerCamera.transform;
 
             Debug.LogWarning(
-                "PlayerWeaponSystem: FirePoint is missing. " +
-                "Using the player camera as a fallback."
+                "FirePoint is missing. " +
+                "Using the camera as a fallback."
             );
         }
 
         if (shootingOrigin == null)
         {
-            Debug.LogWarning(
-                "PlayerWeaponSystem: Neither FirePoint nor PlayerCamera is assigned."
+            Debug.LogError(
+                "PlayerWeaponSystem: " +
+                "FirePoint and PlayerCamera are both missing."
             );
 
             return;
         }
 
-        /*
-         * Quest模式中：
-         * 枪口指向哪里，射线就飞向哪里。
-         */
         Ray shootingRay = new Ray(
             shootingOrigin.position,
             shootingOrigin.forward
@@ -209,7 +236,8 @@ public class PlayerWeaponSystem : MonoBehaviour
 
         Vector3 tracerEndPosition =
             shootingRay.origin +
-            shootingRay.direction * shootingRange;
+            shootingRay.direction *
+            shootingRange;
 
         bool hitSomething = Physics.Raycast(
             shootingRay,
@@ -228,23 +256,16 @@ public class PlayerWeaponSystem : MonoBehaviour
                 hit.collider.name
             );
 
-            /*
-             * 猪的碰撞体可能在子物体上，
-             * 所以向父物体寻找EnemyPigStun。
-             */
             EnemyPigStun pigStun =
-                hit.collider.GetComponentInParent<EnemyPigStun>();
+                hit.collider
+                    .GetComponentInParent<EnemyPigStun>();
 
             if (pigStun != null)
             {
-                pigStun.Stun(
-                    pigStunDuration,
-                    shootingRay.direction
-                );
-
-                Debug.Log(
-                    "Pig hit. Stun duration: " +
-                    pigStunDuration.ToString("F1")
+                ApplyPigHit(
+                    pigStun,
+                    shootingRay.direction,
+                    shootingOrigin.position
                 );
             }
         }
@@ -260,9 +281,85 @@ public class PlayerWeaponSystem : MonoBehaviour
 
         Debug.DrawRay(
             shootingRay.origin,
-            shootingRay.direction * shootingRange,
+            shootingRay.direction *
+            shootingRange,
             Color.green,
-            1f
+            2f
+        );
+    }
+
+    /// <summary>
+    /// 同时兼容两种EnemyPigStun版本：
+    ///
+    /// Stun(float duration, Vector3 direction)
+    /// ApplyHit(Vector3 attackerPosition)
+    /// </summary>
+    private void ApplyPigHit(
+        EnemyPigStun pigStun,
+        Vector3 shootingDirection,
+        Vector3 attackerPosition)
+    {
+        Type pigStunType =
+            pigStun.GetType();
+
+        MethodInfo stunMethod =
+            pigStunType.GetMethod(
+                "Stun",
+                new Type[]
+                {
+                    typeof(float),
+                    typeof(Vector3)
+                }
+            );
+
+        if (stunMethod != null)
+        {
+            stunMethod.Invoke(
+                pigStun,
+                new object[]
+                {
+                    pigStunDuration,
+                    shootingDirection
+                }
+            );
+
+            Debug.Log(
+                "Pig hit using Stun()."
+            );
+
+            return;
+        }
+
+        MethodInfo applyHitMethod =
+            pigStunType.GetMethod(
+                "ApplyHit",
+                new Type[]
+                {
+                    typeof(Vector3)
+                }
+            );
+
+        if (applyHitMethod != null)
+        {
+            applyHitMethod.Invoke(
+                pigStun,
+                new object[]
+                {
+                    attackerPosition
+                }
+            );
+
+            Debug.Log(
+                "Pig hit using ApplyHit()."
+            );
+
+            return;
+        }
+
+        Debug.LogWarning(
+            "EnemyPigStun does not contain " +
+            "Stun(float, Vector3) or " +
+            "ApplyHit(Vector3)."
         );
     }
 
@@ -273,7 +370,7 @@ public class PlayerWeaponSystem : MonoBehaviour
         if (bulletTracerPrefab == null)
         {
             Debug.LogWarning(
-                "PlayerWeaponSystem: BulletTracer prefab is not assigned."
+                "BulletTracer prefab is not assigned."
             );
 
             return;
@@ -344,10 +441,17 @@ public class PlayerWeaponSystem : MonoBehaviour
 
     private void SetCooldownTextVisible(bool visible)
     {
-        if (shootingCooldownText != null &&
-            shootingCooldownText.gameObject.activeSelf != visible)
+        if (shootingCooldownText == null)
         {
-            shootingCooldownText.gameObject.SetActive(visible);
+            return;
+        }
+
+        if (shootingCooldownText.gameObject.activeSelf !=
+            visible)
+        {
+            shootingCooldownText.gameObject.SetActive(
+                visible
+            );
         }
     }
 
