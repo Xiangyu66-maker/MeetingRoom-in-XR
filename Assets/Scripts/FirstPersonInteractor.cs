@@ -11,6 +11,11 @@ public sealed class FirstPersonInteractor : MonoBehaviour
 
     private InteractableObject currentTarget;
     private InteractableObject lastLoggedTarget;
+    private ADoorController currentADoorTarget;
+    private DelayedManualDoorController currentDelayedDoorTarget;
+    private ComputerDoorController currentComputerDoorTarget;
+    private TimedExitDoorController currentTimedDoorTarget;
+    private DoorController currentDoorTarget;
     private GrabbableObject currentGrabbableTarget;
     private GrabbableObject heldObject;
 
@@ -25,6 +30,11 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         if (KeypadController.HasActiveInput)
         {
             currentTarget = null;
+            currentADoorTarget = null;
+            currentDelayedDoorTarget = null;
+            currentComputerDoorTarget = null;
+            currentTimedDoorTarget = null;
+            currentDoorTarget = null;
             currentGrabbableTarget = null;
             return;
         }
@@ -32,6 +42,11 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         if (BackpackUI.Instance != null && BackpackUI.Instance.IsOpen)
         {
             currentTarget = null;
+            currentADoorTarget = null;
+            currentDelayedDoorTarget = null;
+            currentComputerDoorTarget = null;
+            currentTimedDoorTarget = null;
+            currentDoorTarget = null;
             currentGrabbableTarget = null;
             return;
         }
@@ -39,6 +54,11 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         ResolveCamera();
 
         currentTarget = FindLookTarget();
+        currentADoorTarget = FindADoorTarget();
+        currentDelayedDoorTarget = FindDelayedDoorTarget();
+        currentComputerDoorTarget = FindLookComponent<ComputerDoorController>();
+        currentTimedDoorTarget = FindLookComponent<TimedExitDoorController>();
+        currentDoorTarget = FindLookComponent<DoorController>();
 
         if (currentTarget != lastLoggedTarget)
         {
@@ -49,9 +69,39 @@ public sealed class FirstPersonInteractor : MonoBehaviour
             }
         }
 
-        if (currentTarget != null && QuestControllerInput.PrimaryActionDown)
+        if (QuestControllerInput.PrimaryActionDown)
         {
-            currentTarget.Interact();
+            if (currentADoorTarget != null)
+            {
+                currentADoorTarget.Open();
+            }
+            else if (currentDelayedDoorTarget != null)
+            {
+                currentDelayedDoorTarget.TryOpen();
+            }
+            else if (currentComputerDoorTarget != null)
+            {
+                currentComputerDoorTarget.Inspect();
+            }
+            else if (currentTimedDoorTarget != null)
+            {
+                currentTimedDoorTarget.Inspect();
+            }
+            else if (currentDoorTarget != null && currentDoorTarget.IsLocked)
+            {
+                if (currentTarget != null)
+                {
+                    currentTarget.Interact();
+                }
+                else
+                {
+                    currentDoorTarget.Inspect();
+                }
+            }
+            else if (currentTarget != null)
+            {
+                currentTarget.Interact();
+            }
         }
 
         if (currentTarget != null && QuestControllerInput.SecondaryActionDown)
@@ -109,6 +159,39 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         return hit.collider.GetComponentInParent<GrabbableObject>();
     }
 
+    private ADoorController FindADoorTarget()
+    {
+        if (interactionCamera == null) return null;
+
+        Ray ray = interactionCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        if (!Physics.Raycast(ray, out RaycastHit hit, interactionRange, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide))
+            return null;
+
+        return hit.collider.GetComponentInParent<ADoorController>();
+    }
+
+    private DelayedManualDoorController FindDelayedDoorTarget()
+    {
+        if (interactionCamera == null) return null;
+
+        Ray ray = interactionCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        if (!Physics.Raycast(ray, out RaycastHit hit, interactionRange, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide))
+            return null;
+
+        return hit.collider.GetComponentInParent<DelayedManualDoorController>();
+    }
+
+    private T FindLookComponent<T>() where T : Component
+    {
+        if (interactionCamera == null) return null;
+
+        Ray ray = interactionCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        if (!Physics.Raycast(ray, out RaycastHit hit, interactionRange, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide))
+            return null;
+
+        return hit.collider.GetComponentInParent<T>();
+    }
+
     private void ResolveCamera()
     {
         if (interactionCamera != null) return;
@@ -137,7 +220,7 @@ public sealed class FirstPersonInteractor : MonoBehaviour
             return;
         }
 
-        string prompt = currentTarget != null ? "A: Interact    B: Vision" : string.Empty;
+        string prompt = GetInteractionPrompt();
         if (heldObject != null)
         {
             prompt = AppendPrompt(prompt, "Right grip: Drop object");
@@ -158,6 +241,42 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         return string.IsNullOrWhiteSpace(current) ? addition : current + "\n" + addition;
     }
 
+    private string GetInteractionPrompt()
+    {
+        if (currentADoorTarget != null)
+        {
+            return "A: Open selected door";
+        }
+
+        if (currentDelayedDoorTarget != null)
+        {
+            return currentDelayedDoorTarget.CanBeOpened
+                ? "A: Open available door"
+                : currentDelayedDoorTarget.IsLocked
+                    ? $"A: Check door\nAvailable in {Mathf.CeilToInt(currentDelayedDoorTarget.RemainingUnlockSeconds)}s"
+                    : string.Empty;
+        }
+
+        if (currentComputerDoorTarget != null)
+        {
+            return currentComputerDoorTarget.IsLocked ? "A: Check door" : string.Empty;
+        }
+
+        if (currentTimedDoorTarget != null)
+        {
+            return currentTimedDoorTarget.IsLocked ? "A: Check door" : string.Empty;
+        }
+
+        if (currentDoorTarget != null)
+        {
+            return currentDoorTarget.IsLocked ? "A: Check door" : string.Empty;
+        }
+
+        return currentTarget != null
+            ? "A: Interact    B: Vision"
+            : string.Empty;
+    }
+
     private void OnDisable()
     {
         QuestXRUIRuntime.HideMessage(QuestXRUIRuntime.Channel.Interaction);
@@ -169,7 +288,32 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         if (!showDebugPrompt) return;
         if (KeypadController.HasActiveInput) return;
 
-        if (currentTarget != null)
+        if (currentADoorTarget != null)
+        {
+            GUI.Label(
+                new Rect((Screen.width - 300f) * 0.5f, Screen.height - 72f, 300f, 28f),
+                "E: open selected Adoor");
+        }
+        else if (currentDelayedDoorTarget != null)
+        {
+            string delayedDoorPrompt = currentDelayedDoorTarget.CanBeOpened
+                ? "E: open Tenminitunesdoor"
+                : currentDelayedDoorTarget.IsLocked
+                    ? $"E: check door | available in {Mathf.CeilToInt(currentDelayedDoorTarget.RemainingUnlockSeconds)}s"
+                    : string.Empty;
+            GUI.Label(
+                new Rect((Screen.width - 340f) * 0.5f, Screen.height - 72f, 340f, 28f),
+                delayedDoorPrompt);
+        }
+        else if ((currentComputerDoorTarget != null && currentComputerDoorTarget.IsLocked)
+            || (currentTimedDoorTarget != null && currentTimedDoorTarget.IsLocked)
+            || (currentDoorTarget != null && currentDoorTarget.IsLocked))
+        {
+            GUI.Label(
+                new Rect((Screen.width - 300f) * 0.5f, Screen.height - 72f, 300f, 28f),
+                "E: check door");
+        }
+        else if (currentTarget != null)
         {
             GUI.Label(new Rect((Screen.width - 300f) * 0.5f, Screen.height - 72f, 300f, 28f), "A: interact | B: VLM (E/Q on keyboard)");
         }

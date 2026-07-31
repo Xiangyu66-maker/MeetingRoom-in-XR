@@ -7,7 +7,8 @@ public sealed class TimedExitDoorController : MonoBehaviour
 {
     private const string GameplayScenePath =
         "Assets/Scenes/ConferenceRoom_before_blockout_sync.unity";
-    private const string TimedDoorIdPrefix = "timed_exit_door_";
+    private const string FirstTimedDoorName = "danger";
+    private const string SecondTimedDoorName = "danger2";
 
     [SerializeField] private float unlockDelaySeconds = 60f;
     [SerializeField] private Vector3 openOffset = new Vector3(0f, 2.4f, 0f);
@@ -19,6 +20,9 @@ public sealed class TimedExitDoorController : MonoBehaviour
     private float fallbackStartTime;
     private bool isOpening;
     private bool hasOpened;
+
+    public bool IsLocked =>
+        !isOpening && !hasOpened && GetElapsedGameTime() < unlockDelaySeconds;
 
     private void Awake()
     {
@@ -77,27 +81,12 @@ public sealed class TimedExitDoorController : MonoBehaviour
             return;
         }
 
-        ObjectIdentity[] identities = FindAllObjectIdentities();
         int configuredCount = 0;
 
-        foreach (ObjectIdentity identity in identities)
+        foreach (GameObject root in scene.GetRootGameObjects())
         {
-            if (identity == null
-                || identity.gameObject.scene != scene
-                || string.IsNullOrWhiteSpace(identity.ObjectId)
-                || !identity.ObjectId.StartsWith(
-                    TimedDoorIdPrefix,
-                    System.StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            if (identity.GetComponent<TimedExitDoorController>() == null)
-            {
-                identity.gameObject.AddComponent<TimedExitDoorController>();
-            }
-
-            configuredCount++;
+            configuredCount += ConfigureTimedDoor(root.transform, FirstTimedDoorName);
+            configuredCount += ConfigureTimedDoor(root.transform, SecondTimedDoorName);
         }
 
         if (configuredCount != 2)
@@ -108,6 +97,41 @@ public sealed class TimedExitDoorController : MonoBehaviour
         else
         {
             Debug.Log("Configured 2 timed exit doors to open after 60 seconds.");
+        }
+    }
+
+    private static int ConfigureTimedDoor(Transform root, string doorName)
+    {
+        if (string.Equals(
+                root.name,
+                doorName,
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (root.GetComponent<TimedExitDoorController>() == null)
+            {
+                root.gameObject.AddComponent<TimedExitDoorController>();
+            }
+
+            return 1;
+        }
+
+        foreach (Transform child in root)
+        {
+            int configuredCount = ConfigureTimedDoor(child, doorName);
+            if (configuredCount > 0)
+            {
+                return configuredCount;
+            }
+        }
+
+        return 0;
+    }
+
+    public void Inspect()
+    {
+        if (IsLocked)
+        {
+            GameResultUI.GetOrCreate()?.ShowDoorLocked();
         }
     }
 
@@ -139,15 +163,6 @@ public sealed class TimedExitDoorController : MonoBehaviour
                 return;
             }
         }
-    }
-
-    private static ObjectIdentity[] FindAllObjectIdentities()
-    {
-#if UNITY_2023_1_OR_NEWER
-        return FindObjectsByType<ObjectIdentity>(FindObjectsSortMode.None);
-#else
-        return FindObjectsOfType<ObjectIdentity>();
-#endif
     }
 
     private static GameStateManager[] FindAllGameStateManagers()

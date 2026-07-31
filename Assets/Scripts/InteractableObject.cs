@@ -43,6 +43,13 @@ public sealed class InteractableObject : MonoBehaviour
         string description = GetDescription();
         Debug.Log($"Interacted with: {objectId} | {description}", this);
         NotifyExternalInteraction(objectId, this);
+
+        DoorController door = GetComponentInParent<DoorController>();
+        if (door != null && door.IsLocked)
+        {
+            door.Inspect();
+        }
+
         if (GptVisionInteractionManager.Instance != null)
         {
             GptVisionInteractionManager.Instance.AnalyzeObject(gameObject, objectId, description);
@@ -221,4 +228,3 @@ public sealed class InteractableObject : MonoBehaviour
 #endif
     }
 }
-

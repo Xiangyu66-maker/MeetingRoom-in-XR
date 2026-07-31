@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,11 +10,19 @@ public sealed class GameResultUI : MonoBehaviour
     private const string SuccessMessage = "Game Success! You escaped the meeting room.";
     private const string FailureMessage = "Game Failed! Time limit exceeded.";
     private const string ClueFoundMessage = "Clue Found! Note added to backpack.";
-    private const string EscapeObjectiveMessage = "you need escape the room";
+    private const string DoorLockedMessage = "DOOR LOCKED";
+    private const string EscapeObjectiveMessage = "YOU NEED TO ESCAPE THE ROOM.";
+    private const string MonsterWarningMessage =
+        "You are not alone...\nA MONSTER is hunting you.";
 
     [SerializeField] private bool useTextMeshProWhenAvailable = true;
     [SerializeField] private float holdSeconds = 2f;
     [SerializeField] private float fadeSeconds = 1f;
+    [Header("Opening Broadcast")]
+    [SerializeField] private float objectiveHoldSeconds = 4f;
+    [SerializeField] private float monsterWarningHoldSeconds = 5f;
+    [SerializeField] private float openingFadeSeconds = 1.25f;
+    [SerializeField] private float openingMessageGapSeconds = 0.35f;
 
     private GameObject resultRoot;
     private CanvasGroup canvasGroup;
@@ -21,7 +30,10 @@ public sealed class GameResultUI : MonoBehaviour
     private Text uiText;
     private string currentMessage;
     private float visibleTimer;
+    private float currentHoldSeconds;
+    private float currentFadeSeconds;
     private bool isShowing;
+    private Coroutine openingBroadcast;
 
     public static GameResultUI Instance { get; private set; }
 
@@ -55,8 +67,8 @@ public sealed class GameResultUI : MonoBehaviour
         }
 
         visibleTimer += Time.unscaledDeltaTime;
-        float fadeStart = Mathf.Max(0f, holdSeconds);
-        float fadeLength = Mathf.Max(0.01f, fadeSeconds);
+        float fadeStart = Mathf.Max(0f, currentHoldSeconds);
+        float fadeLength = Mathf.Max(0.01f, currentFadeSeconds);
 
         if (visibleTimer <= fadeStart)
         {
@@ -69,7 +81,7 @@ public sealed class GameResultUI : MonoBehaviour
 
         if (fadeProgress >= 1f)
         {
-            Hide();
+            HideCurrentMessage();
         }
     }
 
@@ -106,17 +118,36 @@ public sealed class GameResultUI : MonoBehaviour
         ShowMessage(ClueFoundMessage);
     }
 
+    public void ShowDoorLocked()
+    {
+        ShowMessage(DoorLockedMessage);
+    }
+
     public void ShowEscapeObjective()
     {
-        ShowMessage(EscapeObjectiveMessage);
+        CancelOpeningBroadcast();
+        openingBroadcast = StartCoroutine(PlayOpeningBroadcast());
     }
 
     public void ShowMessage(string message)
     {
+        CancelOpeningBroadcast();
+        ShowMessageInternal(message, holdSeconds, fadeSeconds, Color.white);
+    }
+
+    private void ShowMessageInternal(
+        string message,
+        float messageHoldSeconds,
+        float messageFadeSeconds,
+        Color textColor)
+    {
         EnsureUI();
         SetText(message);
+        SetTextColor(textColor);
         currentMessage = message;
         visibleTimer = 0f;
+        currentHoldSeconds = Mathf.Max(0f, messageHoldSeconds);
+        currentFadeSeconds = Mathf.Max(0.01f, messageFadeSeconds);
         isShowing = true;
         SetAlpha(1f);
         resultRoot.SetActive(true);
@@ -125,12 +156,52 @@ public sealed class GameResultUI : MonoBehaviour
 
     public void Hide()
     {
+        CancelOpeningBroadcast();
+        HideCurrentMessage();
+    }
+
+    private void HideCurrentMessage()
+    {
         EnsureUI();
         resultRoot.SetActive(false);
         currentMessage = string.Empty;
         visibleTimer = 0f;
         isShowing = false;
         SetAlpha(0f);
+    }
+
+    private IEnumerator PlayOpeningBroadcast()
+    {
+        ShowMessageInternal(
+            EscapeObjectiveMessage,
+            objectiveHoldSeconds,
+            openingFadeSeconds,
+            Color.white);
+
+        yield return new WaitForSecondsRealtime(
+            Mathf.Max(0f, objectiveHoldSeconds)
+            + Mathf.Max(0.01f, openingFadeSeconds)
+            + Mathf.Max(0f, openingMessageGapSeconds));
+
+        Color warningColor = new Color(1f, 0.28f, 0.22f, 1f);
+        ShowMessageInternal(
+            MonsterWarningMessage,
+            monsterWarningHoldSeconds,
+            openingFadeSeconds,
+            warningColor);
+
+        openingBroadcast = null;
+    }
+
+    private void CancelOpeningBroadcast()
+    {
+        if (openingBroadcast == null)
+        {
+            return;
+        }
+
+        StopCoroutine(openingBroadcast);
+        openingBroadcast = null;
     }
 
     private void EnsureUI()
@@ -264,6 +335,19 @@ public sealed class GameResultUI : MonoBehaviour
         if (uiText != null)
         {
             uiText.text = message;
+        }
+    }
+
+    private void SetTextColor(Color color)
+    {
+        if (tmpText != null)
+        {
+            TrySetProperty(tmpText, "color", color);
+        }
+
+        if (uiText != null)
+        {
+            uiText.color = color;
         }
     }
 
