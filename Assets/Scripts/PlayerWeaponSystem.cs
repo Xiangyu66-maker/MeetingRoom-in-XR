@@ -12,9 +12,6 @@ public class PlayerWeaponSystem : MonoBehaviour
     [Tooltip("右手下面的WeaponHolder。")]
     [SerializeField] private GameObject heldWeaponObject;
 
-    [Tooltip("VR HUD中的准星。")]
-    [SerializeField] private GameObject crosshairObject;
-
     [Tooltip("枪口位置，必须放在枪管出口。")]
     [SerializeField] private Transform firePoint;
 
@@ -79,7 +76,6 @@ public class PlayerWeaponSystem : MonoBehaviour
             heldWeaponObject.SetActive(false);
         }
 
-        SetCrosshairVisible(false);
         SetCooldownTextVisible(false);
     }
 
@@ -497,16 +493,6 @@ public class PlayerWeaponSystem : MonoBehaviour
             heldWeaponObject.SetActive(visible);
         }
 
-        SetCrosshairVisible(visible);
-    }
-
-    private void SetCrosshairVisible(bool visible)
-    {
-        if (crosshairObject != null &&
-            crosshairObject.activeSelf != visible)
-        {
-            crosshairObject.SetActive(visible);
-        }
     }
 
     private void SetCooldownTextVisible(bool visible)
@@ -527,7 +513,6 @@ public class PlayerWeaponSystem : MonoBehaviour
 
     private void OnDisable()
     {
-        SetCrosshairVisible(false);
         SetCooldownTextVisible(false);
     }
 }
