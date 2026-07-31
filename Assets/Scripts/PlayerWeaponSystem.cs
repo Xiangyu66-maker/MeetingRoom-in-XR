@@ -47,6 +47,20 @@ public class PlayerWeaponSystem : MonoBehaviour
 
     public bool HasWeapon { get; private set; }
 
+    /// <summary>
+    /// The muzzle used by both the shot and the XR aiming ray.
+    /// </summary>
+    public Transform FirePoint => firePoint;
+
+    /// <summary>
+    /// Keeps menu input on the controller while the gun is hidden.
+    /// </summary>
+    public bool IsWeaponVisualActive =>
+        HasWeapon &&
+        heldWeaponObject != null &&
+        heldWeaponObject.activeInHierarchy &&
+        firePoint != null;
+
     private float nextShootingTime;
 
     private void Awake()
@@ -239,12 +253,10 @@ public class PlayerWeaponSystem : MonoBehaviour
             shootingRay.direction *
             shootingRange;
 
-        bool hitSomething = Physics.Raycast(
+        bool hitSomething = TryGetFirstShotHit(
             shootingRay,
-            out RaycastHit hit,
             shootingRange,
-            hitMask,
-            QueryTriggerInteraction.Ignore
+            out RaycastHit hit
         );
 
         if (hitSomething)
@@ -286,6 +298,64 @@ public class PlayerWeaponSystem : MonoBehaviour
             Color.green,
             2f
         );
+    }
+
+    /// <summary>
+    /// Finds the first obstruction outside the player's rig and held gun.
+    /// Hand/controller colliders therefore cannot consume a shot at its origin.
+    /// </summary>
+    public bool TryGetFirstShotHit(
+        Ray ray,
+        float maxDistance,
+        out RaycastHit firstHit)
+    {
+        RaycastHit[] hits = Physics.RaycastAll(
+            ray,
+            maxDistance,
+            hitMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        Array.Sort(
+            hits,
+            (left, right) =>
+                left.distance.CompareTo(right.distance)
+        );
+
+        foreach (RaycastHit candidate in hits)
+        {
+            if (OwnsCollider(candidate.collider))
+            {
+                continue;
+            }
+
+            firstHit = candidate;
+            return true;
+        }
+
+        firstHit = default;
+        return false;
+    }
+
+    public bool OwnsCollider(Collider candidate)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        Transform candidateTransform = candidate.transform;
+
+        if (candidateTransform.IsChildOf(transform))
+        {
+            return true;
+        }
+
+        return
+            heldWeaponObject != null &&
+            candidateTransform.IsChildOf(
+                heldWeaponObject.transform
+            );
     }
 
     /// <summary>

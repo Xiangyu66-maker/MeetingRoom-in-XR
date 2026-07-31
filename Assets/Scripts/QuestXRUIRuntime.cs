@@ -33,6 +33,7 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
 
     private readonly Dictionary<Channel, TextMeshProUGUI> channelTexts = new();
     private readonly HashSet<int> configuredCanvases = new();
+    private readonly RaycastHit[] controllerRayHits = new RaycastHit[32];
 
     private static QuestXRUIRuntime instance;
 
@@ -41,6 +42,7 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
     private Camera xrCamera;
     private EventSystem eventSystem;
     private QuestOVRInputModule ovrInputModule;
+    private PlayerWeaponSystem weaponSystem;
     private LineRenderer controllerRay;
     private Material controllerRayMaterial;
     private float nextCanvasRefreshTime;
@@ -131,7 +133,13 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
             ConfigureSceneCanvases();
         }
 
-        SetControllerRayVisible(HasVisibleInteractiveCanvas());
+        bool shouldShowControllerRay = HasVisibleInteractiveCanvas();
+        if (shouldShowControllerRay)
+        {
+            UpdateControllerRayGeometry();
+        }
+
+        SetControllerRayVisible(shouldShowControllerRay);
     }
 
     private static bool IsXRDisplayRunning()
@@ -221,8 +229,8 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
             }
         }
 
-        ovrInputModule.rayTransform =
-            rightControllerTransform != null ? rightControllerTransform : headTransform;
+        Transform rayOrigin = ResolveControllerRayOrigin();
+        ovrInputModule.rayTransform = rayOrigin;
         ovrInputModule.joyPadClickButton = OVRInput.Button.One;
         ovrInputModule.gazeClickKey = KeyCode.Space;
         ovrInputModule.enabled = true;
@@ -234,50 +242,125 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
         }
 
         EventSystem.current = eventSystem;
-        EnsureControllerRay();
+        EnsureControllerRay(rayOrigin);
     }
 
-    private void EnsureControllerRay()
+    private Transform ResolveControllerRayOrigin()
     {
-        if (controllerRay != null || rightControllerTransform == null)
+        if (weaponSystem == null)
+        {
+#if UNITY_2023_1_OR_NEWER
+            weaponSystem = FindFirstObjectByType<PlayerWeaponSystem>();
+#else
+            weaponSystem = FindObjectOfType<PlayerWeaponSystem>();
+#endif
+        }
+
+        if (weaponSystem != null &&
+            weaponSystem.IsWeaponVisualActive)
+        {
+            return weaponSystem.FirePoint;
+        }
+
+        return
+            rightControllerTransform != null
+                ? rightControllerTransform
+                : headTransform;
+    }
+
+    private void EnsureControllerRay(Transform rayOrigin)
+    {
+        if (rayOrigin == null)
         {
             return;
         }
 
-        GameObject rayObject = new GameObject("Quest UI Controller Ray");
-        rayObject.transform.SetParent(rightControllerTransform, false);
-        rayObject.transform.localPosition = Vector3.zero;
-        rayObject.transform.localRotation = Quaternion.identity;
-
-        controllerRay = rayObject.AddComponent<LineRenderer>();
-        controllerRay.useWorldSpace = false;
-        controllerRay.positionCount = 2;
-        controllerRay.SetPosition(0, Vector3.zero);
-        controllerRay.SetPosition(1, Vector3.forward * 6f);
-        controllerRay.startWidth = 0.003f;
-        controllerRay.endWidth = 0.0015f;
-        controllerRay.startColor = new Color(0.18f, 0.82f, 1f, 0.9f);
-        controllerRay.endColor = new Color(0.18f, 0.82f, 1f, 0.18f);
-        controllerRay.numCapVertices = 4;
-        controllerRay.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        controllerRay.receiveShadows = false;
-
-        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null)
+        if (controllerRay == null)
         {
-            shader = Shader.Find("Sprites/Default");
-        }
+            GameObject rayObject = new GameObject("Quest UI Controller Ray");
 
-        if (shader != null)
-        {
-            controllerRayMaterial = new Material(shader)
+            controllerRay = rayObject.AddComponent<LineRenderer>();
+            controllerRay.useWorldSpace = false;
+            controllerRay.positionCount = 2;
+            controllerRay.startWidth = 0.003f;
+            controllerRay.endWidth = 0.0015f;
+            controllerRay.startColor = new Color(0.18f, 0.82f, 1f, 0.9f);
+            controllerRay.endColor = new Color(0.18f, 0.82f, 1f, 0.18f);
+            controllerRay.numCapVertices = 4;
+            controllerRay.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            controllerRay.receiveShadows = false;
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
             {
-                color = Color.white
-            };
-            controllerRay.material = controllerRayMaterial;
+                shader = Shader.Find("Sprites/Default");
+            }
+
+            if (shader != null)
+            {
+                controllerRayMaterial = new Material(shader)
+                {
+                    color = Color.white
+                };
+                controllerRay.material = controllerRayMaterial;
+            }
+
+            controllerRay.enabled = false;
         }
 
-        controllerRay.enabled = false;
+        Transform rayTransform = controllerRay.transform;
+        if (rayTransform.parent != rayOrigin)
+        {
+            rayTransform.SetParent(rayOrigin, false);
+        }
+
+        rayTransform.localPosition = Vector3.zero;
+        rayTransform.localRotation = Quaternion.identity;
+    }
+
+    private void UpdateControllerRayGeometry()
+    {
+        Transform rayOrigin = ResolveControllerRayOrigin();
+        EnsureControllerRay(rayOrigin);
+
+        if (controllerRay == null || rayOrigin == null)
+        {
+            return;
+        }
+
+        const float maximumRayLength = 6f;
+        float visibleRayLength = maximumRayLength;
+
+        int hitCount = Physics.RaycastNonAlloc(
+            rayOrigin.position,
+            rayOrigin.forward,
+            controllerRayHits,
+            maximumRayLength,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore
+        );
+
+        for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
+        {
+            RaycastHit hit = controllerRayHits[hitIndex];
+
+            if (weaponSystem != null &&
+                weaponSystem.OwnsCollider(hit.collider))
+            {
+                continue;
+            }
+
+            visibleRayLength = Mathf.Min(
+                visibleRayLength,
+                hit.distance
+            );
+        }
+
+        controllerRay.SetPosition(0, Vector3.zero);
+        controllerRay.SetPosition(
+            1,
+            Vector3.forward * visibleRayLength
+        );
     }
 
     private void EnsureStatusCanvas()
