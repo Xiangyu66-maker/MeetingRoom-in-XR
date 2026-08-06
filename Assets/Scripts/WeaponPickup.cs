@@ -13,7 +13,7 @@ public class WeaponPickup : MonoBehaviour
     [SerializeField] private TMP_Text promptText;
 
     [Header("Quest Input")]
-    [Tooltip("使用Quest右手A键拾取。")]
+    [Tooltip("使用Quest右手B键拾取。")]
     [SerializeField] private bool useQuestButton = true;
 
     [Tooltip("Unity编辑器中允许E键测试。")]
@@ -50,12 +50,12 @@ public class WeaponPickup : MonoBehaviour
         bool pressed = false;
 
         /*
-         * Quest右手A键。
+         * Quest右手B键。
          */
         if (useQuestButton)
         {
             pressed = OVRInput.GetDown(
-                OVRInput.Button.One,
+                OVRInput.Button.Two,
                 OVRInput.Controller.RTouch
             );
         }
@@ -129,7 +129,7 @@ public class WeaponPickup : MonoBehaviour
         nearbyPlayerColliders.Add(other);
 
         ShowPrompt(
-            "Press A to pick up weapon"
+            "Press B to pick up weapon"
         );
 
         Debug.Log(
