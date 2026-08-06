@@ -838,7 +838,7 @@ Transform:
   m_GameObject: {fileID: 19420464}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.99709946, z: 0, w: 0.07611004}
-  m_LocalPosition: {x: -1.088, y: 1.34, z: -13.351}
+  m_LocalPosition: {x: -1.088, y: 1.28, z: -13.351}
   m_LocalScale: {x: 0.12, y: 2.3, z: 1.05}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7680,7 +7680,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPigChase
   player: {fileID: 1900675159}
-  chaseSpeed: 0.5
+  chaseSpeed: 0
   stoppingDistance: 0.2
   patrolSpeed: 2
   patrolRadius: 8
@@ -28368,7 +28368,7 @@ MonoBehaviour:
   virtualGreenScreenDepthTolerance: 0.2
   mrcActivationMode: 0
   launchSimultaneousHandsControllersOnStartup: 0
-  isInsightPassthroughEnabled: 0
+  isInsightPassthroughEnabled: 1
   shouldBoundaryVisibilityBeSuppressed: 0
   requestBodyTrackingPermissionOnStartup: 0
   requestFaceTrackingPermissionOnStartup: 0
@@ -28377,7 +28377,7 @@ MonoBehaviour:
   requestRecordAudioPermissionOnStartup: 0
   requestPassthroughCameraAccessPermissionOnStartup: 0
   _localDimming: 1
-  _trackingOriginType: 0
+  _trackingOriginType: 1
   usePositionTracking: 1
   useRotationTracking: 1
   useIPDInPositionTracking: 1
@@ -28434,7 +28434,7 @@ Transform:
   m_GameObject: {fileID: 740281532}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 20.479, y: 0.95, z: -20.555}
+  m_LocalPosition: {x: 20.479, y: 0, z: -20.555}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -74206,7 +74206,7 @@ Transform:
   m_GameObject: {fileID: 1875726263}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7109836, z: 0, w: -0.7032086}
-  m_LocalPosition: {x: 2.28, y: 1.303, z: -15.97}
+  m_LocalPosition: {x: 2.28, y: 1.28, z: -15.97}
   m_LocalScale: {x: 0.12, y: 2.3, z: 1.05}
   m_ConstrainProportionsScale: 0
   m_Children: []
