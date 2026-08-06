@@ -27,7 +27,9 @@ public class PlayerHideState : MonoBehaviour
 #if UNITY_EDITOR
 /// <summary>
 /// Gives the Meta XR Simulator a sensible standing height when it reports an
-/// identity head pose. Editor-only, so Quest builds keep their tracked height.
+/// identity head pose. The whole tracking space is moved so the headset and
+/// controllers keep their tracked relationship. Editor-only, so Quest builds
+/// keep their real tracked height.
 /// </summary>
 internal static class EditorHeadsetHeightFallback
 {
@@ -51,9 +53,7 @@ internal static class EditorHeadsetHeightFallback
             yield return new WaitForEndOfFrame();
 
             OVRCameraRig rig = FindFirstObjectByType<OVRCameraRig>();
-            OVRManager manager = OVRManager.instance;
-
-            if (rig == null || manager == null || rig.centerEyeAnchor == null)
+            if (rig == null || rig.trackingSpace == null || rig.centerEyeAnchor == null)
             {
                 yield break;
             }
@@ -63,13 +63,12 @@ internal static class EditorHeadsetHeightFallback
                 yield break;
             }
 
-            Vector3 offset = manager.headPoseRelativeOffsetTranslation;
-            offset.y += StandingEyeHeight - rig.centerEyeAnchor.position.y;
-            manager.headPoseRelativeOffsetTranslation = offset;
+            float heightCorrection = StandingEyeHeight - rig.centerEyeAnchor.position.y;
+            rig.trackingSpace.position += Vector3.up * heightCorrection;
 
             Debug.Log(
                 $"Meta XR Simulator reported a zero-height head pose. " +
-                $"Applied an Editor-only {StandingEyeHeight:0.0} m eye-height fallback.");
+                $"Raised the complete tracking space by {heightCorrection:0.00} m.");
         }
     }
 }
