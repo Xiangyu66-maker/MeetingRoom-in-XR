@@ -18,6 +18,10 @@ public class PlayerWeaponSystem : MonoBehaviour
     [Tooltip("弹道Prefab。")]
     [SerializeField] private BulletTracer bulletTracerPrefab;
 
+    [Header("Audio")]
+    [Tooltip("枪声音频源，建议挂载在枪口物体上")]
+    [SerializeField] private AudioSource gunshotAudio;
+
     [Header("Cooldown UI")]
     [SerializeField] private TMP_Text shootingCooldownText;
 
@@ -280,6 +284,17 @@ public class PlayerWeaponSystem : MonoBehaviour
         else
         {
             Debug.Log("Shot missed.");
+        }
+
+        SpawnBulletTracer(
+            tracerStartPosition,
+            tracerEndPosition
+        );
+
+        // 播放枪声
+        if (gunshotAudio != null)
+        {
+            gunshotAudio.Play();
         }
 
         SpawnBulletTracer(

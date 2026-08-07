@@ -69,7 +69,8 @@ public sealed class FirstPersonInteractor : MonoBehaviour
             }
         }
 
-        if (QuestControllerInput.PrimaryActionDown)
+        // 主交互改为B键，A键留给跳跃功能
+        if (QuestControllerInput.SecondaryActionDown)
         {
             if (currentADoorTarget != null)
             {
@@ -104,7 +105,8 @@ public sealed class FirstPersonInteractor : MonoBehaviour
             }
         }
 
-        if (currentTarget != null && QuestControllerInput.SecondaryActionDown)
+        // 视觉分析改为左手柄X键，不再占用右手B键
+        if (currentTarget != null && OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.LTouch))
         {
             GptVisionInteractionManager manager = GptVisionInteractionManager.Instance;
             if (manager != null)
@@ -241,39 +243,40 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         return string.IsNullOrWhiteSpace(current) ? addition : current + "\n" + addition;
     }
 
+    // 已更新VR端按键提示
     private string GetInteractionPrompt()
     {
         if (currentADoorTarget != null)
         {
-            return "A: Open selected door";
+            return "B: Open selected door";
         }
 
         if (currentDelayedDoorTarget != null)
         {
             return currentDelayedDoorTarget.CanBeOpened
-                ? "A: Open available door"
+                ? "B: Open available door"
                 : currentDelayedDoorTarget.IsLocked
-                    ? $"A: Check door\nAvailable in {Mathf.CeilToInt(currentDelayedDoorTarget.RemainingUnlockSeconds)}s"
+                    ? $"B: Check door\nAvailable in {Mathf.CeilToInt(currentDelayedDoorTarget.RemainingUnlockSeconds)}s"
                     : string.Empty;
         }
 
         if (currentComputerDoorTarget != null)
         {
-            return currentComputerDoorTarget.IsLocked ? "A: Check door" : string.Empty;
+            return currentComputerDoorTarget.IsLocked ? "B: Check door" : string.Empty;
         }
 
         if (currentTimedDoorTarget != null)
         {
-            return currentTimedDoorTarget.IsLocked ? "A: Check door" : string.Empty;
+            return currentTimedDoorTarget.IsLocked ? "B: Check door" : string.Empty;
         }
 
         if (currentDoorTarget != null)
         {
-            return currentDoorTarget.IsLocked ? "A: Check door" : string.Empty;
+            return currentDoorTarget.IsLocked ? "B: Check door" : string.Empty;
         }
 
         return currentTarget != null
-            ? "A: Interact    B: Vision"
+            ? "B: Interact    X: Vision"
             : string.Empty;
     }
 
@@ -315,7 +318,7 @@ public sealed class FirstPersonInteractor : MonoBehaviour
         }
         else if (currentTarget != null)
         {
-            GUI.Label(new Rect((Screen.width - 300f) * 0.5f, Screen.height - 72f, 300f, 28f), "A: interact | B: VLM (E/Q on keyboard)");
+            GUI.Label(new Rect((Screen.width - 300f) * 0.5f, Screen.height - 72f, 300f, 28f), "B: interact | X: VLM (E/Q on keyboard)");
         }
 
         if (heldObject != null)
