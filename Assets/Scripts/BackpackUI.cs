@@ -206,12 +206,16 @@ public sealed class BackpackUI : MonoBehaviour
             return namedCanvas;
         }
 
-        GameObject canvasObject = new GameObject("Backpack Canvas");
-        Canvas createdCanvas = canvasObject.AddComponent<Canvas>();
+        GameObject canvasObject = new GameObject(
+            "Backpack Canvas",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster));
+        Canvas createdCanvas = canvasObject.GetComponent<Canvas>();
         createdCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         createdCanvas.sortingOrder = 5100;
         ConfigureCanvasScaler(canvasObject);
-        canvasObject.AddComponent<GraphicRaycaster>();
         return createdCanvas;
     }
 

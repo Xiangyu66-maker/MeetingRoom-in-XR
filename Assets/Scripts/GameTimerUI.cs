@@ -114,7 +114,12 @@ public sealed class GameTimerUI : MonoBehaviour
             return;
         }
 
-        canvasObject = new GameObject("Game Timer Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        canvasObject = new GameObject(
+            "Game Timer Canvas",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster));
         canvasObject.transform.SetParent(transform, false);
 
         Canvas canvas = canvasObject.GetComponent<Canvas>();

@@ -7,8 +7,8 @@ using UnityEngine.UI;
 using UnityEngine.XR;
 
 /// <summary>
-/// Converts the meeting-room's desktop-style canvases into a head-locked,
-/// world-space HUD and enables Quest Touch controller ray input.
+/// Presents non-interactive HUD canvases in Quest camera space, keeps interactive
+/// panels in head-locked world space, and enables Quest Touch controller ray input.
 /// Desktop play mode is left unchanged when no XR display is running.
 /// </summary>
 [DefaultExecutionOrder(-10000)]
@@ -27,6 +27,10 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
     private const string GameplaySceneName = "ConferenceRoom_before_blockout_sync";
     private const string MenuSceneName = "Menu";
     private const string StatusCanvasName = "Quest XR Status Canvas";
+    private const string ResultCanvasName = "Game Result Canvas";
+    private const string TimerCanvasName = "Game Timer Canvas";
+    private const string BackpackCanvasName = "Backpack Canvas";
+    private const string LegacyHudCanvasName = "VRHUDCanvas";
     private const float CanvasRefreshInterval = 0.5f;
 
     private static readonly List<XRDisplaySubsystem> DisplaySubsystems = new();
@@ -377,13 +381,9 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
             typeof(CanvasScaler));
 
         Canvas canvas = canvasObject.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.WorldSpace;
         canvas.sortingOrder = 15000;
         canvas.overrideSorting = true;
-        canvas.worldCamera = xrCamera;
-
-        RectTransform rect = canvasObject.GetComponent<RectTransform>();
-        ConfigureHeadLockedRect(rect, 1.35f, 0.001f);
+        ConfigureCameraSpaceHud(canvas);
         configuredCanvases.Add(canvas.GetInstanceID());
 
         CreateChannel(
@@ -412,7 +412,7 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
             "Vision Feedback",
             new Vector2(0.5f, 0f),
             new Vector2(0f, 210f),
-            new Vector2(1240f, 150f),
+            new Vector2(1080f, 132f),
             TextAlignmentOptions.Center,
             24f);
 
@@ -422,7 +422,7 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
             "Context Prompt",
             new Vector2(0.5f, 0f),
             new Vector2(0f, 128f),
-            new Vector2(900f, 58f),
+            new Vector2(820f, 58f),
             TextAlignmentOptions.Center,
             28f);
 
@@ -432,7 +432,7 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
             "Interaction Prompt",
             new Vector2(0.5f, 0f),
             new Vector2(0f, 62f),
-            new Vector2(1100f, 58f),
+            new Vector2(860f, 58f),
             TextAlignmentOptions.Center,
             28f);
     }
@@ -464,7 +464,7 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
         panelRect.sizeDelta = size;
 
         Image background = panelObject.GetComponent<Image>();
-        background.color = new Color(0.025f, 0.035f, 0.05f, 0.78f);
+        background.color = new Color(0.025f, 0.035f, 0.05f, 0.46f);
         background.raycastTarget = false;
 
         GameObject textObject = new GameObject(
@@ -514,7 +514,7 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
 
     private void ConfigureCanvas(Canvas canvas)
     {
-        if (headTransform == null)
+        if (headTransform == null || xrCamera == null)
         {
             return;
         }
@@ -525,13 +525,22 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
             return;
         }
 
-        float distance = GetCanvasDistance(canvas.name);
-        float scale = GetCanvasScale(canvas.name);
+        if (IsCameraSpaceHud(canvas.name))
+        {
+            ConfigureCameraSpaceHud(canvas);
+            SanitizeLegacyHud(canvas);
+            configuredCanvases.Add(canvas.GetInstanceID());
+            Debug.Log($"Quest XR camera-space HUD configured: {canvas.name}", canvas);
+            return;
+        }
 
         canvas.renderMode = RenderMode.WorldSpace;
         canvas.overrideSorting = true;
         canvas.worldCamera = xrCamera;
-        ConfigureHeadLockedRect(rect, distance, scale);
+        ConfigureHeadLockedRect(
+            rect,
+            GetCanvasDistance(canvas.name),
+            GetCanvasScale(canvas.name));
 
         if (CanvasHasSelectable(canvas))
         {
@@ -558,6 +567,84 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
         Debug.Log($"Quest XR UI configured: {canvas.name}", canvas);
     }
 
+    private void ConfigureCameraSpaceHud(Canvas canvas)
+    {
+        if (canvas == null || xrCamera == null)
+        {
+            return;
+        }
+
+        RectTransform rect = canvas.transform as RectTransform;
+        if (rect == null)
+        {
+            return;
+        }
+
+        canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.worldCamera = xrCamera;
+        canvas.planeDistance = Mathf.Max(0.35f, xrCamera.nearClipPlane + 0.1f);
+        canvas.overrideSorting = true;
+
+        CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+        if (scaler == null)
+        {
+            scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+        }
+
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        rect.SetParent(transform, false);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition3D = Vector3.zero;
+        rect.sizeDelta = Vector2.zero;
+        rect.localRotation = Quaternion.identity;
+        rect.localScale = Vector3.one;
+
+        OVRRaycaster ovrRaycaster = canvas.GetComponent<OVRRaycaster>();
+        if (ovrRaycaster != null)
+        {
+            ovrRaycaster.enabled = false;
+        }
+    }
+
+    private static bool IsCameraSpaceHud(string canvasName)
+    {
+        return string.Equals(canvasName, StatusCanvasName, System.StringComparison.Ordinal)
+            || string.Equals(canvasName, ResultCanvasName, System.StringComparison.Ordinal)
+            || string.Equals(canvasName, TimerCanvasName, System.StringComparison.Ordinal)
+            || string.Equals(canvasName, BackpackCanvasName, System.StringComparison.Ordinal)
+            || string.Equals(canvasName, LegacyHudCanvasName, System.StringComparison.Ordinal);
+    }
+
+    private static void SanitizeLegacyHud(Canvas canvas)
+    {
+        if (canvas == null
+            || !string.Equals(
+                canvas.name,
+                LegacyHudCanvasName,
+                System.StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Transform placeholder = canvas.transform.Find("ShootCooldownText");
+        if (placeholder == null)
+        {
+            return;
+        }
+
+        TextMeshProUGUI text = placeholder.GetComponent<TextMeshProUGUI>();
+        if (text != null && string.Equals(text.text, "New Text", System.StringComparison.Ordinal))
+        {
+            placeholder.gameObject.SetActive(false);
+        }
+    }
+
     private void ConfigureHeadLockedRect(RectTransform rect, float distance, float scale)
     {
         rect.SetParent(headTransform, false);
@@ -572,12 +659,12 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
 
     private static float GetCanvasDistance(string canvasName)
     {
-        if (canvasName == "Backpack Canvas")
+        if (canvasName == BackpackCanvasName)
         {
             return 1.15f;
         }
 
-        if (canvasName == "Game Timer Canvas")
+        if (canvasName == TimerCanvasName)
         {
             return 1.3f;
         }
@@ -587,7 +674,7 @@ public sealed class QuestXRUIRuntime : MonoBehaviour
 
     private static float GetCanvasScale(string canvasName)
     {
-        if (canvasName == "Backpack Canvas")
+        if (canvasName == BackpackCanvasName)
         {
             return 0.0014f;
         }

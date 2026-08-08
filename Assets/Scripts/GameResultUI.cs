@@ -212,12 +212,18 @@ public sealed class GameResultUI : MonoBehaviour
             return;
         }
 
-        GameObject canvasObject = new GameObject("Game Result Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        GameObject canvasObject = new GameObject(
+            "Game Result Canvas",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster));
         canvasObject.transform.SetParent(transform, false);
 
         Canvas canvas = canvasObject.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 5000;
+        // Full-screen broadcasts must sit above the timer, backpack and status HUD.
+        canvas.sortingOrder = 30000;
 
         CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
